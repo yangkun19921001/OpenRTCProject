@@ -5,6 +5,6 @@
 
 **Android:** https://github.com/yangkun19921001/OpenRTCClient/tree/develop/examples/android_gradle/p2p;
 
-**server:**
+**server:** https://github.com/yangkun19921001/OpenRTCProject/blob/main/p2p/server/server.js
 
-**JS:**
+**JS:** https://github.com/yangkun19921001/OpenRTCProject/blob/main/p2p/client/js/index.html
