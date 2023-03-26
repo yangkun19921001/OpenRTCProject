@@ -3,7 +3,8 @@
 
 ## P2P 音视频通话项目
 
-**Android: ** https://github.com/yangkun19921001/OpenRTCClient/tree/develop/examples/android_gradle/p2p;
+**Android:** https://github.com/yangkun19921001/OpenRTCClient/tree/develop/examples/android_gradle/p2p;
 
-**server：**
-**JS：**
+**server:**
+
+**JS:**
