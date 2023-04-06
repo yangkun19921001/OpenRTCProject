@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>聊天程序</title>
+  <style>
+    #messages {
+      height: 300px;
+      overflow-y: scroll;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      padding: 5px;
+    }
+  </style>
+  <!-- //<script src="/socket.io/socket.io.js"></script> -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.3/socket.io.min.js"></script>
+
+  <script>
+
+    // 连接到 Socket.IO 服务器
+    const socket = io();
+
+    // 当与服务器连接时触发 'connect' 事件
+    socket.on('connect', () => {
+      console.log('已连接到服务器', socket.id);
+
+      const messagesList = document.getElementById('messages');
+      const newMessage = document.createElement('li');
+      const currentTime = getCurrentTimeString();
+      newMessage.textContent = `${currentTime} 已连接到服务器-`+socket.id;
+      messagesList.appendChild(newMessage);
+
+      // 默认加入名为 'room1' 的房间
+      socket.emit('joinRoom', 'room1');
+
+
+    });
+
+    socket.on('message', ({ sender, receiver, msg }) => {
+      const messagesList = document.getElementById('messages');
+      const newMessage = document.createElement('li');
+      const currentTime = getCurrentTimeString();
+      newMessage.textContent = `${currentTime} ${sender}/${receiver}: ${msg}`;
+      messagesList.appendChild(newMessage);
+    });
+
+    // // 当从服务器接收到 'message' 事件时，打印收到的消息
+    // socket.on('message', (msg) => {
+    //   console.log('收到消息:', msg);
+    // });
+
+   // 当从服务器接收到 'message' 事件时，在消息列表中添加新消息
+    socket.on('joined', ({ sender, receiver }) => {
+      const messagesList = document.getElementById('messages');
+      const newMessage = document.createElement('li');
+      const currentTime = getCurrentTimeString();
+      newMessage.textContent = `${currentTime} ${sender} 加入房间 ${receiver}`;
+      messagesList.appendChild(newMessage);
+    });
+
+
+
+    // 向所有客户端广播消息
+    function broadcast() {
+      const msg = document.getElementById('broadcastMsg').value;
+      socket.emit('broadcast', msg);
+      const messagesList = document.getElementById('messages');
+      const newMessage = document.createElement('li');
+      const currentTime = getCurrentTimeString();
+      newMessage.textContent = `${currentTime} 发送:`+msg;
+      messagesList.appendChild(newMessage);
+    }
+
+    // 向指定房间内的特定客户端发送消息
+    function sendTo() {
+      const msg = document.getElementById('directMsg').value;
+      const id = document.getElementById('socketId').value;
+      const room = document.getElementById('room').value;
+      socket.emit('sendTo', { room ,id,msg});
+
+      const messagesList = document.getElementById('messages');
+      const newMessage = document.createElement('li');
+      const currentTime = getCurrentTimeString();
+      newMessage.textContent = `${currentTime} 发送room:${room} targetId:${socketId} msg:${msg}`;
+      messagesList.appendChild(newMessage);
+    }
+
+    // 向指定房间内的所有其他客户端发送消息
+    function group() {
+      const msg = document.getElementById('groupMsg').value;
+      const room = document.getElementById('room').value;
+      socket.emit('group', { room, msg });
+
+      const messagesList = document.getElementById('messages');
+      const newMessage = document.createElement('li');
+      const currentTime = getCurrentTimeString();
+      newMessage.textContent = ` ${currentTime} 发送room: ${room} msg:${msg}`;
+      messagesList.appendChild(newMessage);
+    }
+
+    function getCurrentTimeString() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hour = String(now.getHours()).padStart(2, '0');
+      const minute = String(now.getMinutes()).padStart(2, '0');
+      const second = String(now.getSeconds()).padStart(2, '0');
+
+      return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+    }
+  </script>
+</head>
+<!-- <body>
+  <h1>聊天程序</h1>
+  <input type="text" id="broadcastMsg" placeholder="群发消息">
+  <button onclick="broadcast()">发送</button>
+  <br>
+  <input type="text" id="room" placeholder="房间名">
+  <input type="text" id="socketId" placeholder="指定 socket.id">
+  <input type="text" id="directMsg" placeholder="私发消息">
+  <button onclick="sendTo()">发送</button>
+  <br>
+  <input type="text" id="groupMsg" placeholder="房间群发消息">
+  <button onclick="group()">发送</button>
+</body> -->
+<body>
+  <h1>聊天程序</h1>
+  <div id="messages"></div>
+  <input type="text" id="broadcastMsg" placeholder="群发消息">
+  <button onclick="broadcast()">发送</button>
+  <br>
+  <input type="text" id="room" placeholder="房间名">
+  <input type="text" id="socketId" placeholder="指定 socket.id">
+  <input type="text" id="directMsg" placeholder="私发消息">
+  <button onclick="sendTo()">发送</button>
+  <br>
+  <input type="text" id="groupMsg" placeholder="房间群发消息">
+  <button onclick="group()">发送</button>
+</body>
+</html>

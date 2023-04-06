@@ -1,0 +1,143 @@
+--- ../../getstats/js/main_bw.js	2019-03-29 15:58:41.558420158 +0800
++++ ./main_bw.js	2019-03-30 10:52:09.110930653 +0800
+@@ -8,6 +8,10 @@
+ 
+ var optBw = document.querySelector('select#bandwidth');
+ 
++var chat = document.querySelector('textarea#chat');
++var send_txt = document.querySelector('textarea#sendtxt');
++var btnSend = document.querySelector('button#send');
++
+ var bitrateGraph;
+ var bitrateSeries;
+ 
+@@ -28,6 +32,7 @@
+ var remoteStream = null;
+ 
+ var pc = null;
++var dc = null;
+ 
+ var roomid;
+ var socket = null;
+@@ -35,6 +40,8 @@
+ var offerdesc = null;
+ var state = 'init';
+ 
++
++
+ function sendMessage(roomid, data){
+ 
+ 	console.log('send message to other end', roomid, data);
+@@ -44,6 +51,18 @@
+ 	socket.emit('message', roomid, data);
+ }
+ 
++function dataChannelStateChange() {
++  var readyState = dc.readyState;
++  console.log('Send channel state is: ' + readyState);
++  if (readyState === 'open') {
++    send_txt.disabled = false;
++    send.disabled = false;
++  } else {
++    send_txt.disabled = true;
++    send.disabled = true;
++  }
++}
++
+ function conn(){
+ 
+ 	socket = io.connect();
+@@ -62,6 +81,7 @@
+ 
+ 		btnConn.disabled = true;
+ 		btnLeave.disabled = false;
++
+ 		console.log('receive joined message, state=', state);
+ 	});
+ 
+@@ -75,6 +95,12 @@
+ 			bindTracks();
+ 		}
+ 
++		//create data channel for transporting non-audio/video data
++		dc = pc.createDataChannel('chatchannel');
++		dc.onmessage = receivemsg;
++		dc.onopen = dataChannelStateChange;
++		dc.onclose = dataChannelStateChange;
++
+ 		state = 'joined_conn';
+ 		call();
+ 
+@@ -278,6 +304,16 @@
+ 
+ }
+ 
++function receivemsg(e){
++	var msg = e.data;
++	if(msg){
++		console.log(msg);
++		chat.value += "->" + msg + "\r\n";
++	}else{
++		console.error('received msg is null');
++	}
++}
++
+ function createPeerConnection(){
+ 
+ 	//如果是多人的话，在这里要创建一个新的连接.
+@@ -301,6 +337,16 @@
+ 			}
+ 		}
+ 
++		pc.ondatachannel = e=> {
++			if(!dc){
++				dc = e.channel;
++				dc.onmessage = receivemsg; 
++				dc.onopen = dataChannelStateChange;
++				dc.onclose = dataChannelStateChange;
++			}
++
++		}
++
+ 		pc.ontrack = getRemoteStream;
+ 	}else {
+ 		console.log('the pc have be created!');
+@@ -374,12 +420,18 @@
+ 
+ 	socket.emit('leave', roomid); //notify server
+ 
++	dc.close();
++	dc = null;
++
+ 	hangup();
+ 	closeLocalMedia();
+ 
+ 	btnConn.disabled = false;
+ 	btnLeave.disabled = true;
+ 	optBw.disabled = true;
++
++	send_txt.disabled = true;
++	send.disabled = true;
+ }
+ 
+ function chang_bw()
+@@ -459,6 +511,19 @@
+   });
+ }, 1000);
+ 
++function sendText(){
++	var data = send_txt.value;
++	if(data != null){
++		dc.send(data);
++	}
++
++	//更好的展示
++	send_txt.value = "";
++	chat.value += '<- ' + data + '\r\n';
++}
++
+ btnConn.onclick = connSignalServer
+ btnLeave.onclick = leave;
+ optBw.onchange = chang_bw;
++
++btnSend.onclick = sendText;
