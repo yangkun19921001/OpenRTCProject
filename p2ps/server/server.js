@@ -2,12 +2,13 @@ var log4js = require('log4js');
 var http = require('http');
 var https = require('https');
 var fs = require('fs');
+// v2.0.1
 var socketIo = require('socket.io');
 
 var express = require('express');
 var serveIndex = require('serve-index');
 
-var USERCOUNT = 3;
+var USERCOUNT = 6;
 
 log4js.configure({
     appenders: {
@@ -56,17 +57,18 @@ io.sockets.on('connection', (socket)=> {
             const sender = socket.id;
             const receiver = data.to;
             data.from = sender;
-            // 检查目标客户端是否在指定的房间内
-            const clientsInRoom = io.sockets.adapter.rooms.get(room);
-            if (clientsInRoom) {
-              if (clientsInRoom.has(receiver)) {
-                socket.to(receiver).emit('message', data);
-              } else {
-                console.log(`Socket ID ${receiver} is not in room ${room}`);
-              }
-            } else {
-              console.log(`Room ${room} does not exist`);
-            }
+            socket.to(receiver).emit('message', data);
+            // // 检查目标客户端是否在指定的房间内
+            // const clientsInRoom = io.sockets.adapter.rooms[room];
+            // if (clientsInRoom) {
+            //   if (clientsInRoom.has(receiver)) {
+            //     socket.to(receiver).emit('message', data);
+            //   } else {
+            //     console.log(`Socket ID ${receiver} is not in room ${room}`);
+            //   }
+            // } else {
+            //   console.log(`Room ${room} does not exist`);
+            // }
     });
 
     socket.on('join', (room)=>{
@@ -78,20 +80,18 @@ io.sockets.on('connection', (socket)=> {
             if(users < USERCOUNT){
                     //socket.emit('joined', room, socket.id, users > 1); //发给除自己之外的房间内的所有人
 
-                    const clientsInRoom = io.sockets.adapter.rooms.get(room);
-                    const clientsCount = clientsInRoom ? clientsInRoom.size : 0;
-                    console.log(`There are ${clientsCount} clients in room ${room}`);
-                    if(clientsCount > 1){
-                      //向 room 中除自己外的客户端发送消息
-                      socket.broadcast.to(room).emit('joined', { sender:socket.id, receiver: room });
-                
-                      clientsInRoom.forEach((clientId) => {
-                        if (clientId !== socket.id) {
-                           console.log(`Other client ID in room ${room}: ${socket.id} > ${clientId}  `);
-                           socket.emit('joined', { sender:clientId, receiver: room });
-                        }
-                      });
-                     }
+                    // const clientsInRoom = io.sockets.adapter.rooms.get(room);
+                    // const clientsCount = clientsInRoom ? clientsInRoom.size : 0;
+                    // console.log(`There are ${clientsCount} clients in room ${room}`);
+                    // if(clientsCount > 1){
+                    //   //向 room 中除自己外的客户端发送消息, 收到者发起 offer
+                    //   socket.broadcast.to(room).emit('joined', { sender:socket.id, receiver: room });
+                    // }
+
+                    socket.emit('joined', room, socket.id, users > 1); //发给自己
+                    if(users > 1){
+                            socket.to(room).emit('otherjoin', room, socket.id);//发给除自己之外的房间内的所有人
+                    }
 
             }else{
                     socket.leave(room);
