@@ -15,7 +15,6 @@ app.use(express.static(__dirname + '/client'));
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
-  // 加入房间
 // 加入房间
 socket.on('join', (room) => {
     socket.join(room);
@@ -28,11 +27,11 @@ socket.on('join', (room) => {
     const otherClientIds = Object.keys(clientsInRoom.sockets).filter(id => id !== socket.id);
   
     // 发送包含所有其他客户端 ID 的 join 消息给新加入的客户端
-    socket.emit('join',  room, socket.id, otherClientIds );
+    socket.emit('joined',  room, socket.id, otherClientIds );
   
     // 如果房间中有多个客户端，将 join 消息发送给房间中的其他客户端
     if (clientsCount > 1) {
-      socket.to(room).emit('join',  room,  socket.id );
+      socket.to(room).emit('joined',  room,  socket.id );
     }
   });
   
@@ -49,11 +48,11 @@ socket.on('join', (room) => {
   });
 
   // 离开房间
-  socket.on('leave', (room) => {
+  socket.on('leaved', (room) => {
     console.log(`User ${socket.id} left room ${room}`);
 
     // 发送 leave 消息给自己和房间中的其他客户端
-    io.to(room).emit('leave',  room, socket.id );
+    io.to(room).emit('leaved',  room, socket.id );
 
     socket.leave(room);
     console.log(`Socket ID ${socket.id} left room ${room}`);
