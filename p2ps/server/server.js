@@ -48,7 +48,7 @@ socket.on('join', (room) => {
   });
 
   // 离开房间
-  socket.on('leaved', (room) => {
+  socket.on('leave', (room) => {
     console.log(`User ${socket.id} left room ${room}`);
 
     // 发送 leave 消息给自己和房间中的其他客户端
