@@ -40,7 +40,7 @@ startButton.addEventListener('click', async () => {
   socket = io.connect(serverUrl.value);
 
   // 处理加入房间事件
-  socket.on('join', (room, id, otherClientIds) => {
+  socket.on('joined', (room, id, otherClientIds) => {
 
     leaveButton.disabled = false;
 
@@ -91,7 +91,7 @@ startButton.addEventListener('click', async () => {
   });
 
   // 处理离开房间事件
-  socket.on('leave', (room, id) => {
+  socket.on('leaved', (room, id) => {
     const videoElement = document.getElementById(`remoteVideo-${id}`);
     if (videoElement) {
       videoElement.remove();
