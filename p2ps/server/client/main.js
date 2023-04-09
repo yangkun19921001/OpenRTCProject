@@ -10,6 +10,10 @@ let localStream;
 let peers = {};
 leaveButton.disabled = true;
 leaveButton.addEventListener('click', async () => {
+    leave();
+  });
+
+function leave(){
     const room = document.getElementById('room').value;
     socket.emit('leave', room);
     for (let remoteId in peers) {
@@ -23,7 +27,7 @@ leaveButton.addEventListener('click', async () => {
     }
     startButton.disabled = false;
     leaveButton.disabled = true;
-  });
+}
 
 startButton.addEventListener('click', async () => {
   startButton.disabled = true;
@@ -134,17 +138,20 @@ function createPeerConnection(room, localId, remoteId,createOffer) {
     };
   
     // 处理远程媒体流
+// 处理远程媒体流
     peer.ontrack = event => {
-      let remoteVideo = document.getElementById(`remoteVideo-${remoteId}`);
-      if (!remoteVideo) {
+        let remoteVideo = document.getElementById(`remoteVideo-${remoteId}`);
+        if (!remoteVideo) {
         remoteVideo = document.createElement('video');
         remoteVideo.id = `remoteVideo-${remoteId}`;
         remoteVideo.autoplay = true;
         remoteVideo.playsinline = true;
+        remoteVideo.classList.add('remote-video'); // Add the 'remote-video' class
         remoteVideos.appendChild(remoteVideo);
-      }
-      remoteVideo.srcObject = event.streams[0];
+        }
+        remoteVideo.srcObject = event.streams[0];
     };
+  
   
     // 创建并发送 Offer
     if (createOffer) {
@@ -160,4 +167,9 @@ function createPeerConnection(room, localId, remoteId,createOffer) {
     // 将创建的 RTCPeerConnection 实例添加到 peers 对象
     peers[remoteId] = peer;
   }
+
+  // 监听浏览器关闭或刷新事件
+window.addEventListener('beforeunload', (event) => {
+    leave();
+  });
   
