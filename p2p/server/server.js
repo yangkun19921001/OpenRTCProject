@@ -31,8 +31,8 @@ log4js.configure({
 var logger = log4js.getLogger();
 
 var app = express();
-app.use(serveIndex('./public'));
-app.use(express.static('./public'));
+app.use(serveIndex('./client'));
+app.use(express.static('./client'));
 
 
 

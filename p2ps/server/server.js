@@ -1,115 +1,70 @@
-var log4js = require('log4js');
-var http = require('http');
-var https = require('https');
-var fs = require('fs');
-// v2.0.1
-var socketIo = require('socket.io');
+const express = require('express');
+const app = express();
+const fs = require('fs');
+const http = process.env.HTTPS === 'true' ? require('https') : require('http');
+const server = process.env.HTTPS === 'true' ? http.createServer({
+    key : fs.readFileSync('./cert/rtcmedia.top.key'),
+    cert: fs.readFileSync('./cert/rtcmedia.top_bundle.pem')
+  }, app): http.createServer(app);
+//const http = require('http').Server(app);
+const io = require('socket.io')(server);
+const PORT = 443;
 
-var express = require('express');
-var serveIndex = require('serve-index');
+app.use(express.static(__dirname + '/client'));
 
-var USERCOUNT = 6;
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
 
-log4js.configure({
-    appenders: {
-        file: {
-            type: 'file',
-            filename: 'app.log',
-            layout: {
-                type: 'pattern',
-                pattern: '%r %p - %m',
-            }
-        }
-    },
-    categories: {
-        default: {
-            appenders: ['file'],
-            level: 'debug'
-        }
+  // 加入房间
+// 加入房间
+socket.on('join', (room) => {
+    socket.join(room);
+    console.log(`Socket ID ${socket.id} joined room ${room}`);
+  
+    const clientsInRoom = io.sockets.adapter.rooms[room];
+    const clientsCount = Object.keys(clientsInRoom.sockets).length;
+  
+    // 获取房间中的所有客户端 ID，除了当前加入的客户端
+    const otherClientIds = Object.keys(clientsInRoom.sockets).filter(id => id !== socket.id);
+  
+    // 发送包含所有其他客户端 ID 的 join 消息给新加入的客户端
+    socket.emit('join',  room, socket.id, otherClientIds );
+  
+    // 如果房间中有多个客户端，将 join 消息发送给房间中的其他客户端
+    if (clientsCount > 1) {
+      socket.to(room).emit('join',  room,  socket.id );
     }
+  });
+  
+
+  // 发送消息到指定的房间和 socket.id
+  socket.on('message', ( room, id, msg ) => {
+    const sender = socket.id;
+    const clientsInRoom = io.sockets.adapter.rooms[room];
+    if (clientsInRoom && clientsInRoom.sockets.hasOwnProperty(id)) {
+      socket.to(id).emit('message', sender, id, msg);
+    } else {
+      console.log(`Socket ID ${id} is not in room ${room}`);
+    }
+  });
+
+  // 离开房间
+  socket.on('leave', (room) => {
+    console.log(`User ${socket.id} left room ${room}`);
+
+    // 发送 leave 消息给自己和房间中的其他客户端
+    io.to(room).emit('leave',  room, socket.id );
+
+    socket.leave(room);
+    console.log(`Socket ID ${socket.id} left room ${room}`);
+  });
+
+  // 断开连接
+  socket.on('disconnect', () => {
+    console.log('A user disconnected:', socket.id);
+  });
 });
 
-var logger = log4js.getLogger();
-
-var app = express();
-app.use(serveIndex('./client'));
-app.use(express.static('./client'));
-
-
-
-//http server
-var http_server = http.createServer(app);
-http_server.listen(80, '0.0.0.0');
-
-var options = {
-        key : fs.readFileSync('./cert/rtcmedia.top.key'),
-        cert: fs.readFileSync('./cert/rtcmedia.top_bundle.pem')
-}
-
-//https server
-var https_server = https.createServer(options, app);
-var io = socketIo.listen(https_server);
-
-
-io.sockets.on('connection', (socket)=> {
-
-    socket.on('message', (room, data)=>{
-            const sender = socket.id;
-            const receiver = data.to;
-            data.from = sender;
-            socket.to(receiver).emit('message', data);
-            // // 检查目标客户端是否在指定的房间内
-            // const clientsInRoom = io.sockets.adapter.rooms[room];
-            // if (clientsInRoom) {
-            //   if (clientsInRoom.has(receiver)) {
-            //     socket.to(receiver).emit('message', data);
-            //   } else {
-            //     console.log(`Socket ID ${receiver} is not in room ${room}`);
-            //   }
-            // } else {
-            //   console.log(`Room ${room} does not exist`);
-            // }
-    });
-
-    socket.on('join', (room)=>{
-            socket.join(room);
-            var myRoom = io.sockets.adapter.rooms[room];
-            var users = (myRoom)? Object.keys(myRoom.sockets).length : 0;
-            logger.debug('the user number of room is: ' + users);
-
-            if(users < USERCOUNT){
-                    //socket.emit('joined', room, socket.id, users > 1); //发给除自己之外的房间内的所有人
-
-                    // const clientsInRoom = io.sockets.adapter.rooms.get(room);
-                    // const clientsCount = clientsInRoom ? clientsInRoom.size : 0;
-                    // console.log(`There are ${clientsCount} clients in room ${room}`);
-                    // if(clientsCount > 1){
-                    //   //向 room 中除自己外的客户端发送消息, 收到者发起 offer
-                    //   socket.broadcast.to(room).emit('joined', { sender:socket.id, receiver: room });
-                    // }
-
-                    socket.emit('joined', room, socket.id, users > 1); //发给自己
-                    if(users > 1){
-                            socket.to(room).emit('otherjoin', room, socket.id);//发给除自己之外的房间内的所有人
-                    }
-
-            }else{
-                    socket.leave(room);
-                    socket.emit('full', room, socket.id);
-            }
-
-    });
-    socket.on('leave', (room)=>{
-        var myRoom = io.sockets.adapter.rooms[room];
-        var users = (myRoom)? Object.keys(myRoom.sockets).length : 0;
-        logger.debug('the user number of room is: ' + (users-1));
-        //socket.emit('leaved', room, socket.id);
-        //socket.broadcast.emit('leaved', room, socket.id);
-        socket.to(room).emit('bye', room, socket.id);
-        socket.emit('leaved', room, socket.id);
-        //io.in(room).emit('leaved', room, socket.id);
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
-
-});
-
-https_server.listen(443, '0.0.0.0');

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P2P Multi-User Video Chat</title>
+</head>
+<body>
+  <h1>P2P Multi-User Video Chat</h1>
+  <label for="serverUrl">Signaling Server URL:</label>
+  <input type="text" id="serverUrl" value="https://locahost">
+  <br>
+  <label for="room">Room:</label>
+  <input type="text" id="room" value="123456">
+  <br>
+  <button id="start">Start</button>
+  <button id="leave">Leave</button>
+  <div id="localVideoContainer">
+    <video id="localVideo" autoplay muted playsinline></video>
+  </div>
+  <div id="remoteVideos"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
