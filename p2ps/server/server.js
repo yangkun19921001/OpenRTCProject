@@ -8,7 +8,7 @@ const server = process.env.HTTPS === 'true' ? http.createServer({
   }, app): http.createServer(app);
 //const http = require('http').Server(app);
 const io = require('socket.io')(server);
-const PORT = 443;
+const PORT = process.env.HTTPS === 'true' ? 443:80;
 
 app.use(express.static(__dirname + '/client'));
 
