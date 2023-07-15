@@ -57,7 +57,7 @@ startButton.addEventListener('click', async () => {
 
   // 处理消息事件
   socket.on('message', (sender, receiver, msg) => {
-    const message = msg;
+    let message = msg;
     // 如果接收到的 msg 是字符串，将其解析为 JSON 对象
  if (typeof msg === 'string') {
     try {
